@@ -23,29 +23,61 @@ st.markdown("""
     .stButton>button {
         width: 100%;
     }
+    /* Estilo da Sidebar */
+    .css-1d391kg {
+        background-color: #f0f2f6;
+    }
+    .sidebar-title {
+        color: #262730;
+        font-size: 24px;
+        font-weight: bold;
+        padding: 20px 0;
+        text-align: center;
+    }
+    .sidebar-subtitle {
+        color: #666666;
+        font-size: 14px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .menu-item {
+        padding: 10px 15px;
+        margin: 5px 0;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+    }
+    .menu-item:hover {
+        background-color: #e6e9ef;
+    }
+    .menu-item.selected {
+        background-color: #e6e9ef;
+        font-weight: bold;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 # Menu lateral
-st.sidebar.title("Test TPM")
+st.sidebar.markdown('<p class="sidebar-title">Test TPM</p>', unsafe_allow_html=True)
+st.sidebar.markdown('<p class="sidebar-subtitle">Sistema de Gerenciamento de Testes</p>', unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
-# Opções do menu
+# Opções do menu com ícones
 menu = st.sidebar.radio(
-    "Selecione uma opção:",
-    ["Dashboard", "Planos de Teste", "Suítes de Teste", "Casos de Teste", "Testes Regressivos"]
+    "Navegação",
+    ["📊 Dashboard", "📋 Planos de Teste", "🧪 Suítes de Teste", "✅ Casos de Teste", "🔄 Testes Regressivos"],
+    label_visibility="collapsed"
 )
 
 # Renderiza a página selecionada
-if menu == "Dashboard":
+if menu == "📊 Dashboard":
     render_dashboard()
-elif menu == "Planos de Teste":
+elif menu == "📋 Planos de Teste":
     render_plano_teste()
-elif menu == "Suítes de Teste":
+elif menu == "🧪 Suítes de Teste":
     render_suite_teste()
-elif menu == "Casos de Teste":
+elif menu == "✅ Casos de Teste":
     render_caso_teste()
-elif menu == "Testes Regressivos":
+elif menu == "🔄 Testes Regressivos":
     render_regressivo()
 
 # Verifica se há um caso de teste para edição
