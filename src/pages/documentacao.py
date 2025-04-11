@@ -176,41 +176,52 @@ def render_pasta(pasta, nivel=0, modo_edicao=False):
     # Obter casos de teste
     casos = listar_casos_teste_pasta(pasta_id)
     
+    # Criar indentação visual
+    indent = "    " * nivel
+    
     # Renderizar pasta atual
-    with st.expander(f"{'  ' * nivel}📁 {nome}"):
-        st.write(f"**Regras:** {regras}")
-        st.write(f"**Data de Criação:** {data_criacao}")
+    st.markdown(f"{indent}📁 **{nome}**")
+    
+    # Container para conteúdo da pasta
+    with st.container():
+        # Adicionar margem esquerda para criar hierarquia visual
+        if nivel > 0:
+            st.markdown(f"<style>div.element-container {{margin-left: {nivel * 40}px;}}</style>", unsafe_allow_html=True)
         
-        # Botões de edição e exclusão (apenas no modo de edição)
-        if modo_edicao:
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("✏️ Editar", key=f"edit_{pasta_id}"):
-                    st.session_state['pasta_edicao'] = pasta_id
+        # Informações e botões
+        with st.expander("Detalhes", expanded=False):
+            st.write(f"**Regras:** {regras}")
+            st.write(f"**Data de Criação:** {data_criacao}")
             
-            with col2:
-                if st.button("🗑️ Excluir", key=f"delete_{pasta_id}"):
-                    st.session_state['pasta_exclusao'] = pasta_id
-                    st.session_state['pasta_exclusao_nome'] = nome
-                    # Adicionar script para rolar até o topo
-                    st.markdown("""
-                        <script>
-                            window.scrollTo(0, 0);
-                        </script>
-                    """, unsafe_allow_html=True)
-        
-        # Renderizar subpastas
-        if subpastas:
-            st.subheader("Subpastas")
-            for subpasta in subpastas:
-                render_pasta(subpasta, nivel + 1, modo_edicao)
+            # Botões de edição e exclusão (apenas no modo de edição)
+            if modo_edicao:
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("✏️ Editar", key=f"edit_{pasta_id}"):
+                        st.session_state['pasta_edicao'] = pasta_id
+                
+                with col2:
+                    if st.button("🗑️ Excluir", key=f"delete_{pasta_id}"):
+                        st.session_state['pasta_exclusao'] = pasta_id
+                        st.session_state['pasta_exclusao_nome'] = nome
+                        # Adicionar script para rolar até o topo
+                        st.markdown("""
+                            <script>
+                                window.scrollTo(0, 0);
+                            </script>
+                        """, unsafe_allow_html=True)
         
         # Renderizar casos de teste
         if casos:
-            st.subheader("Casos de Teste")
             for caso in casos:
-                with st.expander(f"{'  ' * (nivel + 1)}🔍 {caso[1]}"):
+                st.markdown(f"{indent}    📄 {caso[1]}")
+                with st.expander("Ver detalhes do caso de teste", expanded=False):
                     st.write(caso[2])
+        
+        # Renderizar subpastas
+        if subpastas:
+            for subpasta in subpastas:
+                render_pasta(subpasta, nivel + 1, modo_edicao)
 
 def main():
     st.title("📚 Documentação")
@@ -224,11 +235,26 @@ def main():
     with tab1:
         st.header("Visualização de Documentação")
         
+        # Adicionar CSS para melhorar a visualização hierárquica
+        st.markdown("""
+            <style>
+            .folder-structure {
+                margin-left: 20px;
+            }
+            .folder-item {
+                margin: 5px 0;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+        
         # Lista de pastas para visualização
         pastas_raiz = listar_pastas()  # Apenas pastas raiz
         
-        for pasta in pastas_raiz:
-            render_pasta(pasta, modo_edicao=False)
+        if not pastas_raiz:
+            st.info("Nenhuma pasta criada ainda.")
+        else:
+            for pasta in pastas_raiz:
+                render_pasta(pasta, modo_edicao=False)
     
     with tab2:
         st.header("Edição de Documentação")
@@ -329,8 +355,11 @@ def main():
         st.subheader("Pastas Existentes")
         pastas_raiz = listar_pastas()  # Apenas pastas raiz
         
-        for pasta in pastas_raiz:
-            render_pasta(pasta, modo_edicao=True)
+        if not pastas_raiz:
+            st.info("Nenhuma pasta criada ainda.")
+        else:
+            for pasta in pastas_raiz:
+                render_pasta(pasta, modo_edicao=True)
 
 if __name__ == "__main__":
     main() 
