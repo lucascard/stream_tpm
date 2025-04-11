@@ -12,7 +12,9 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome TEXT NOT NULL,
             regras TEXT,
-            data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            pasta_pai_id INTEGER,
+            data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (pasta_pai_id) REFERENCES pastas_documentacao (id)
         )
     ''')
     
@@ -31,21 +33,43 @@ def init_db():
     conn.commit()
     conn.close()
 
-def criar_pasta(nome, regras):
+def criar_pasta(nome, regras, pasta_pai_id=None):
     conn = sqlite3.connect('database/test_tpm.db')
     c = conn.cursor()
-    c.execute('INSERT INTO pastas_documentacao (nome, regras) VALUES (?, ?)',
-              (nome, regras))
+    c.execute('INSERT INTO pastas_documentacao (nome, regras, pasta_pai_id) VALUES (?, ?, ?)',
+              (nome, regras, pasta_pai_id))
     conn.commit()
     conn.close()
 
-def listar_pastas():
+def listar_pastas(pasta_pai_id=None):
     conn = sqlite3.connect('database/test_tpm.db')
     c = conn.cursor()
-    c.execute('SELECT id, nome, regras, data_criacao FROM pastas_documentacao ORDER BY data_criacao DESC')
+    c.execute('''
+        SELECT id, nome, regras, pasta_pai_id, data_criacao 
+        FROM pastas_documentacao 
+        WHERE pasta_pai_id IS NULL AND ? IS NULL
+           OR pasta_pai_id = ?
+        ORDER BY data_criacao DESC
+    ''', (pasta_pai_id, pasta_pai_id))
     pastas = c.fetchall()
     conn.close()
     return pastas
+
+def listar_todas_pastas():
+    conn = sqlite3.connect('database/test_tpm.db')
+    c = conn.cursor()
+    c.execute('SELECT id, nome, regras, pasta_pai_id, data_criacao FROM pastas_documentacao ORDER BY data_criacao DESC')
+    pastas = c.fetchall()
+    conn.close()
+    return pastas
+
+def obter_pasta(pasta_id):
+    conn = sqlite3.connect('database/test_tpm.db')
+    c = conn.cursor()
+    c.execute('SELECT id, nome, regras, pasta_pai_id, data_criacao FROM pastas_documentacao WHERE id = ?', (pasta_id,))
+    pasta = c.fetchone()
+    conn.close()
+    return pasta
 
 def adicionar_caso_teste_pasta(pasta_id, caso_teste_id, ordem):
     conn = sqlite3.connect('database/test_tpm.db')
@@ -69,6 +93,46 @@ def listar_casos_teste_pasta(pasta_id):
     conn.close()
     return casos
 
+def obter_caminho_pasta(pasta_id):
+    caminho = []
+    pasta_atual = obter_pasta(pasta_id)
+    
+    while pasta_atual:
+        caminho.insert(0, pasta_atual)
+        if pasta_atual[3]:  # pasta_pai_id
+            pasta_atual = obter_pasta(pasta_atual[3])
+        else:
+            break
+            
+    return caminho
+
+def render_pasta(pasta, nivel=0):
+    pasta_id, nome, regras, pasta_pai_id, data_criacao = pasta
+    
+    # Obter subpastas
+    subpastas = listar_pastas(pasta_id)
+    
+    # Obter casos de teste
+    casos = listar_casos_teste_pasta(pasta_id)
+    
+    # Renderizar pasta atual
+    with st.expander(f"{'  ' * nivel}📁 {nome}"):
+        st.write(f"**Regras:** {regras}")
+        st.write(f"**Data de Criação:** {data_criacao}")
+        
+        # Renderizar subpastas
+        if subpastas:
+            st.subheader("Subpastas")
+            for subpasta in subpastas:
+                render_pasta(subpasta, nivel + 1)
+        
+        # Renderizar casos de teste
+        if casos:
+            st.subheader("Casos de Teste")
+            for caso in casos:
+                with st.expander(f"{'  ' * (nivel + 1)}🔍 {caso[1]}"):
+                    st.write(caso[2])
+
 def main():
     st.title("📚 Documentação")
     
@@ -87,47 +151,34 @@ def main():
             nome_pasta = st.text_input("Nome da Pasta")
             regras = st.text_area("Regras da Pasta")
             
+            # Seleção de pasta pai (opcional)
+            todas_pastas = listar_todas_pastas()
+            opcoes_pastas = ["Nenhuma (Pasta Raiz)"] + [f"{p[1]} (ID: {p[0]})" for p in todas_pastas]
+            pasta_pai_idx = st.selectbox("Pasta Pai (opcional)", range(len(opcoes_pastas)), format_func=lambda x: opcoes_pastas[x])
+            
             if st.form_submit_button("Criar Pasta"):
                 if nome_pasta:
-                    criar_pasta(nome_pasta, regras)
+                    pasta_pai_id = None if pasta_pai_idx == 0 else todas_pastas[pasta_pai_idx-1][0]
+                    criar_pasta(nome_pasta, regras, pasta_pai_id)
                     st.success("Pasta criada com sucesso!")
                 else:
                     st.error("Por favor, insira um nome para a pasta.")
         
         # Lista de pastas existentes
         st.subheader("Pastas Existentes")
-        pastas = listar_pastas()
+        pastas_raiz = listar_pastas()  # Apenas pastas raiz
         
-        for pasta in pastas:
-            with st.expander(f"📁 {pasta[1]}"):
-                st.write(f"**Regras:** {pasta[2]}")
-                st.write(f"**Data de Criação:** {pasta[3]}")
-                
-                # Adicionar casos de teste à pasta
-                st.subheader("Adicionar Caso de Teste")
-                casos_teste = listar_casos_teste_pasta(pasta[0])
-                
-                # TODO: Implementar seleção de casos de teste e ordem
-                # TODO: Implementar visualização dos casos já adicionados
+        for pasta in pastas_raiz:
+            render_pasta(pasta)
     
     with tab2:
         st.header("Visualização de Documentação")
         
         # Lista de pastas para visualização
-        pastas = listar_pastas()
+        pastas_raiz = listar_pastas()  # Apenas pastas raiz
         
-        for pasta in pastas:
-            with st.expander(f"📁 {pasta[1]}"):
-                st.write(f"**Regras:** {pasta[2]}")
-                st.write(f"**Data de Criação:** {pasta[3]}")
-                
-                # Listar casos de teste da pasta
-                st.subheader("Casos de Teste")
-                casos = listar_casos_teste_pasta(pasta[0])
-                
-                for caso in casos:
-                    with st.expander(f"🔍 {caso[1]}"):
-                        st.write(caso[2])
+        for pasta in pastas_raiz:
+            render_pasta(pasta)
 
 if __name__ == "__main__":
     main() 
