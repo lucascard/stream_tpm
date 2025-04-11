@@ -192,6 +192,12 @@ def render_pasta(pasta, nivel=0, modo_edicao=False):
                 if st.button("🗑️ Excluir", key=f"delete_{pasta_id}"):
                     st.session_state['pasta_exclusao'] = pasta_id
                     st.session_state['pasta_exclusao_nome'] = nome
+                    # Adicionar script para rolar até o topo
+                    st.markdown("""
+                        <script>
+                            window.scrollTo(0, 0);
+                        </script>
+                    """, unsafe_allow_html=True)
         
         # Renderizar subpastas
         if subpastas:
@@ -231,6 +237,13 @@ def main():
         if 'pasta_exclusao' in st.session_state:
             pasta_id = st.session_state['pasta_exclusao']
             pasta_nome = st.session_state['pasta_exclusao_nome']
+            
+            # Adicionar script para rolar até o topo
+            st.markdown("""
+                <script>
+                    window.scrollTo(0, 0);
+                </script>
+            """, unsafe_allow_html=True)
             
             st.warning(f"Você está prestes a excluir a pasta '{pasta_nome}' e todas as suas subpastas. Esta ação não pode ser desfeita.")
             
