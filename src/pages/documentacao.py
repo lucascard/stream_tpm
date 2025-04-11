@@ -71,6 +71,32 @@ def criar_pasta(nome, regras, pasta_pai_id=None):
     conn.commit()
     conn.close()
 
+def editar_pasta(pasta_id, nome, regras, pasta_pai_id=None):
+    conn = sqlite3.connect('database/test_tpm.db')
+    c = conn.cursor()
+    c.execute('UPDATE pastas_documentacao SET nome = ?, regras = ?, pasta_pai_id = ? WHERE id = ?',
+              (nome, regras, pasta_pai_id, pasta_id))
+    conn.commit()
+    conn.close()
+
+def excluir_pasta(pasta_id):
+    conn = sqlite3.connect('database/test_tpm.db')
+    c = conn.cursor()
+    
+    # Primeiro, excluir todas as associações com casos de teste
+    c.execute('DELETE FROM pasta_casos_teste WHERE pasta_id = ?', (pasta_id,))
+    
+    # Depois, excluir todas as subpastas recursivamente
+    subpastas = listar_pastas(pasta_id)
+    for subpasta in subpastas:
+        excluir_pasta(subpasta[0])
+    
+    # Por fim, excluir a pasta em si
+    c.execute('DELETE FROM pastas_documentacao WHERE id = ?', (pasta_id,))
+    
+    conn.commit()
+    conn.close()
+
 def listar_pastas(pasta_pai_id=None):
     conn = sqlite3.connect('database/test_tpm.db')
     c = conn.cursor()
@@ -85,10 +111,15 @@ def listar_pastas(pasta_pai_id=None):
     conn.close()
     return pastas
 
-def listar_todas_pastas():
+def listar_todas_pastas(excluir_id=None):
     conn = sqlite3.connect('database/test_tpm.db')
     c = conn.cursor()
-    c.execute('SELECT id, nome, regras, pasta_pai_id, data_criacao FROM pastas_documentacao ORDER BY data_criacao DESC')
+    
+    if excluir_id:
+        c.execute('SELECT id, nome, regras, pasta_pai_id, data_criacao FROM pastas_documentacao WHERE id != ? ORDER BY data_criacao DESC', (excluir_id,))
+    else:
+        c.execute('SELECT id, nome, regras, pasta_pai_id, data_criacao FROM pastas_documentacao ORDER BY data_criacao DESC')
+    
     pastas = c.fetchall()
     conn.close()
     return pastas
@@ -136,7 +167,7 @@ def obter_caminho_pasta(pasta_id):
             
     return caminho
 
-def render_pasta(pasta, nivel=0):
+def render_pasta(pasta, nivel=0, modo_edicao=False):
     pasta_id, nome, regras, pasta_pai_id, data_criacao = pasta
     
     # Obter subpastas
@@ -150,11 +181,25 @@ def render_pasta(pasta, nivel=0):
         st.write(f"**Regras:** {regras}")
         st.write(f"**Data de Criação:** {data_criacao}")
         
+        # Botões de edição e exclusão (apenas no modo de edição)
+        if modo_edicao:
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("✏️ Editar", key=f"edit_{pasta_id}"):
+                    st.session_state['pasta_edicao'] = pasta_id
+            
+            with col2:
+                if st.button("🗑️ Excluir", key=f"delete_{pasta_id}"):
+                    if st.button("Confirmar exclusão?", key=f"confirm_{pasta_id}"):
+                        excluir_pasta(pasta_id)
+                        st.success(f"Pasta '{nome}' excluída com sucesso!")
+                        st.experimental_rerun()
+        
         # Renderizar subpastas
         if subpastas:
             st.subheader("Subpastas")
             for subpasta in subpastas:
-                render_pasta(subpasta, nivel + 1)
+                render_pasta(subpasta, nivel + 1, modo_edicao)
         
         # Renderizar casos de teste
         if casos:
@@ -174,6 +219,50 @@ def main():
     
     with tab1:
         st.header("Edição de Documentação")
+        
+        # Verificar se há uma pasta para edição
+        if 'pasta_edicao' in st.session_state:
+            pasta_id = st.session_state['pasta_edicao']
+            pasta = obter_pasta(pasta_id)
+            
+            if pasta:
+                st.subheader(f"Editar Pasta: {pasta[1]}")
+                
+                with st.form(f"editar_pasta_{pasta_id}"):
+                    nome_pasta = st.text_input("Nome da Pasta", value=pasta[1])
+                    regras = st.text_area("Regras da Pasta", value=pasta[2])
+                    
+                    # Seleção de pasta pai (opcional)
+                    todas_pastas = listar_todas_pastas(excluir_id=pasta_id)  # Excluir a pasta atual
+                    opcoes_pastas = ["Nenhuma (Pasta Raiz)"] + [f"{p[1]} (ID: {p[0]})" for p in todas_pastas]
+                    
+                    # Encontrar o índice da pasta pai atual
+                    pasta_pai_atual = pasta[3]
+                    pasta_pai_idx = 0  # Padrão: nenhuma pasta pai
+                    
+                    if pasta_pai_atual:
+                        for i, p in enumerate(todas_pastas):
+                            if p[0] == pasta_pai_atual:
+                                pasta_pai_idx = i + 1  # +1 porque a primeira opção é "Nenhuma"
+                                break
+                    
+                    pasta_pai_idx = st.selectbox("Pasta Pai (opcional)", range(len(opcoes_pastas)), 
+                                                index=pasta_pai_idx, 
+                                                format_func=lambda x: opcoes_pastas[x])
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.form_submit_button("Salvar Alterações"):
+                            pasta_pai_id = None if pasta_pai_idx == 0 else todas_pastas[pasta_pai_idx-1][0]
+                            editar_pasta(pasta_id, nome_pasta, regras, pasta_pai_id)
+                            st.success("Pasta atualizada com sucesso!")
+                            del st.session_state['pasta_edicao']
+                            st.experimental_rerun()
+                    
+                    with col2:
+                        if st.form_submit_button("Cancelar"):
+                            del st.session_state['pasta_edicao']
+                            st.experimental_rerun()
         
         # Formulário para criar nova pasta
         with st.form("nova_pasta"):
@@ -199,7 +288,7 @@ def main():
         pastas_raiz = listar_pastas()  # Apenas pastas raiz
         
         for pasta in pastas_raiz:
-            render_pasta(pasta)
+            render_pasta(pasta, modo_edicao=True)
     
     with tab2:
         st.header("Visualização de Documentação")
@@ -208,7 +297,7 @@ def main():
         pastas_raiz = listar_pastas()  # Apenas pastas raiz
         
         for pasta in pastas_raiz:
-            render_pasta(pasta)
+            render_pasta(pasta, modo_edicao=False)
 
 if __name__ == "__main__":
     main() 
