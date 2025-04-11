@@ -6,17 +6,47 @@ def init_db():
     conn = sqlite3.connect('database/test_tpm.db')
     c = conn.cursor()
     
-    # Criar tabela de pastas de documentação
+    # Verificar se a tabela existe
     c.execute('''
-        CREATE TABLE IF NOT EXISTS pastas_documentacao (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            regras TEXT,
-            pasta_pai_id INTEGER,
-            data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (pasta_pai_id) REFERENCES pastas_documentacao (id)
-        )
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name='pastas_documentacao'
     ''')
+    tabela_existe = c.fetchone() is not None
+    
+    if not tabela_existe:
+        # Criar tabela de pastas de documentação
+        c.execute('''
+            CREATE TABLE pastas_documentacao (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome TEXT NOT NULL,
+                regras TEXT,
+                pasta_pai_id INTEGER,
+                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (pasta_pai_id) REFERENCES pastas_documentacao (id)
+            )
+        ''')
+    else:
+        # Verificar se a coluna pasta_pai_id existe
+        c.execute('PRAGMA table_info(pastas_documentacao)')
+        colunas = [coluna[1] for coluna in c.fetchall()]
+        
+        if 'pasta_pai_id' not in colunas:
+            # Adicionar a coluna pasta_pai_id
+            c.execute('ALTER TABLE pastas_documentacao ADD COLUMN pasta_pai_id INTEGER')
+            # Adicionar a chave estrangeira
+            c.execute('''
+                CREATE TABLE temp_pastas_documentacao (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nome TEXT NOT NULL,
+                    regras TEXT,
+                    pasta_pai_id INTEGER,
+                    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (pasta_pai_id) REFERENCES pastas_documentacao (id)
+                )
+            ''')
+            c.execute('INSERT INTO temp_pastas_documentacao (id, nome, regras, data_criacao) SELECT id, nome, regras, data_criacao FROM pastas_documentacao')
+            c.execute('DROP TABLE pastas_documentacao')
+            c.execute('ALTER TABLE temp_pastas_documentacao RENAME TO pastas_documentacao')
     
     # Criar tabela de associação entre pastas e casos de teste
     c.execute('''
