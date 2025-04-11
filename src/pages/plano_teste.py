@@ -8,33 +8,10 @@ def render_plano_teste():
     # Inicializa conexão com o banco
     db = SQLiteDB()
     
-    # Cria duas abas: uma para criar e outra para listar
-    tab1, tab2 = st.tabs(["Criar Plano", "Listar Planos"])
+    # Cria duas abas: uma para listar e outra para criar
+    tab1, tab2 = st.tabs(["Listar Planos", "Criar Plano"])
     
     with tab1:
-        st.header("Criar Novo Plano de Teste")
-        
-        with st.form("form_plano_teste"):
-            titulo = st.text_input("Título do Plano")
-            descricao = st.text_area("Descrição")
-            status = st.selectbox(
-                "Status",
-                options=["Não Iniciado", "Em Andamento", "Concluído", "Cancelado"]
-            )
-            
-            submitted = st.form_submit_button("Criar Plano de Teste")
-            
-            if submitted:
-                if not titulo:
-                    st.error("O título do plano é obrigatório!")
-                else:
-                    if db.inserir_plano(titulo, descricao, status):
-                        st.success("Plano de teste criado com sucesso!")
-                        st.rerun()
-                    else:
-                        st.error("Erro ao criar plano de teste!")
-    
-    with tab2:
         st.header("Planos de Teste Existentes")
         
         planos = db.listar_planos()
@@ -57,4 +34,27 @@ def render_plano_teste():
                             else:
                                 st.error("Erro ao excluir plano de teste!")
         else:
-            st.info("Nenhum plano de teste encontrado.") 
+            st.info("Nenhum plano de teste encontrado.")
+    
+    with tab2:
+        st.header("Criar Novo Plano de Teste")
+        
+        with st.form("form_plano_teste"):
+            titulo = st.text_input("Título do Plano")
+            descricao = st.text_area("Descrição")
+            status = st.selectbox(
+                "Status",
+                options=["Não Iniciado", "Em Andamento", "Concluído", "Cancelado"]
+            )
+            
+            submitted = st.form_submit_button("Criar Plano de Teste")
+            
+            if submitted:
+                if not titulo:
+                    st.error("O título do plano é obrigatório!")
+                else:
+                    if db.inserir_plano(titulo, descricao, status):
+                        st.success("Plano de teste criado com sucesso!")
+                        st.rerun()
+                    else:
+                        st.error("Erro ao criar plano de teste!") 

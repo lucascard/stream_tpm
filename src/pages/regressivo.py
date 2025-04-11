@@ -8,33 +8,10 @@ def render_regressivo():
     # Inicializa conexão com o banco
     db = SQLiteDB()
     
-    # Cria duas abas: uma para criar e outra para listar
-    tab1, tab2 = st.tabs(["Criar Regressivo", "Listar Regressivos"])
+    # Cria duas abas: uma para listar e outra para criar
+    tab1, tab2 = st.tabs(["Listar Regressivos", "Criar Regressivo"])
     
     with tab1:
-        st.header("Criar Novo Teste Regressivo")
-        
-        with st.form("form_regressivo"):
-            titulo = st.text_input("Título do Teste Regressivo")
-            descricao = st.text_area("Descrição")
-            status = st.selectbox(
-                "Status",
-                options=["Não Iniciado", "Em Andamento", "Concluído", "Cancelado"]
-            )
-            
-            submitted = st.form_submit_button("Criar Teste Regressivo")
-            
-            if submitted:
-                if not titulo:
-                    st.error("O título do teste regressivo é obrigatório!")
-                else:
-                    if db.inserir_regressivo(titulo, descricao, status):
-                        st.success("Teste regressivo criado com sucesso!")
-                        st.rerun()
-                    else:
-                        st.error("Erro ao criar teste regressivo!")
-    
-    with tab2:
         st.header("Testes Regressivos Existentes")
         
         regressivos = db.listar_regressivos()
@@ -57,4 +34,27 @@ def render_regressivo():
                             else:
                                 st.error("Erro ao excluir teste regressivo!")
         else:
-            st.info("Nenhum teste regressivo encontrado.") 
+            st.info("Nenhum teste regressivo encontrado.")
+    
+    with tab2:
+        st.header("Criar Novo Teste Regressivo")
+        
+        with st.form("form_regressivo"):
+            titulo = st.text_input("Título do Teste Regressivo")
+            descricao = st.text_area("Descrição")
+            status = st.selectbox(
+                "Status",
+                options=["Não Iniciado", "Em Andamento", "Concluído", "Cancelado"]
+            )
+            
+            submitted = st.form_submit_button("Criar Teste Regressivo")
+            
+            if submitted:
+                if not titulo:
+                    st.error("O título do teste regressivo é obrigatório!")
+                else:
+                    if db.inserir_regressivo(titulo, descricao, status):
+                        st.success("Teste regressivo criado com sucesso!")
+                        st.rerun()
+                    else:
+                        st.error("Erro ao criar teste regressivo!") 

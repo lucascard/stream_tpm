@@ -8,10 +8,35 @@ def render_suite_teste():
     # Inicializa conexão com o banco
     db = SQLiteDB()
     
-    # Cria duas abas: uma para criar e outra para listar
-    tab1, tab2 = st.tabs(["Criar Suíte", "Listar Suítes"])
+    # Cria duas abas: uma para listar e outra para criar
+    tab1, tab2 = st.tabs(["Listar Suítes", "Criar Suíte"])
     
     with tab1:
+        st.header("Suítes de Teste Existentes")
+        
+        suites = db.listar_suites()
+        if suites:
+            for suite in suites:
+                with st.expander(f"{suite['titulo']} - {suite['status']}"):
+                    st.write(f"**Descrição:** {suite['descricao']}")
+                    st.write(f"**Data de Criação:** {suite['data_criacao']}")
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("Editar", key=f"edit_{suite['id']}"):
+                            st.session_state['suite_edicao'] = suite
+                            st.rerun()
+                    with col2:
+                        if st.button("Excluir", key=f"del_{suite['id']}"):
+                            if db.excluir_suite(suite['id']):
+                                st.success("Suíte de teste excluída com sucesso!")
+                                st.rerun()
+                            else:
+                                st.error("Erro ao excluir suíte de teste!")
+        else:
+            st.info("Nenhuma suíte de teste encontrada.")
+    
+    with tab2:
         st.header("Criar Nova Suíte de Teste")
         
         with st.form("form_suite_teste"):
@@ -30,31 +55,6 @@ def render_suite_teste():
                 else:
                     if db.inserir_suite(titulo, descricao, status):
                         st.success("Suíte de teste criada com sucesso!")
-                        st.experimental_rerun()
+                        st.rerun()
                     else:
-                        st.error("Erro ao criar suíte de teste!")
-    
-    with tab2:
-        st.header("Suítes de Teste Existentes")
-        
-        suites = db.listar_suites()
-        if suites:
-            for suite in suites:
-                with st.expander(f"{suite['titulo']} - {suite['status']}"):
-                    st.write(f"**Descrição:** {suite['descricao']}")
-                    st.write(f"**Data de Criação:** {suite['data_criacao']}")
-                    
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if st.button("Editar", key=f"edit_{suite['id']}"):
-                            st.session_state['suite_edicao'] = suite
-                            st.experimental_rerun()
-                    with col2:
-                        if st.button("Excluir", key=f"del_{suite['id']}"):
-                            if db.excluir_suite(suite['id']):
-                                st.success("Suíte de teste excluída com sucesso!")
-                                st.experimental_rerun()
-                            else:
-                                st.error("Erro ao excluir suíte de teste!")
-        else:
-            st.info("Nenhuma suíte de teste encontrada.") 
+                        st.error("Erro ao criar suíte de teste!") 

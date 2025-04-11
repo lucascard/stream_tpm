@@ -9,10 +9,39 @@ def render_caso_teste():
     # Inicializa conexão com o banco
     db = SQLiteDB()
     
-    # Cria duas abas: uma para criar e outra para listar
-    tab1, tab2 = st.tabs(["Criar Caso", "Listar Casos"])
+    # Cria duas abas: uma para listar e outra para criar
+    tab1, tab2 = st.tabs(["Listar Casos", "Criar Caso"])
     
     with tab1:
+        st.header("Casos de Teste Existentes")
+        
+        casos = db.listar_casos_teste()
+        if casos:
+            for caso in casos:
+                with st.expander(f"{caso['titulo']} - {caso['status']}"):
+                    st.write(f"**Descrição:** {caso['descricao']}")
+                    st.write(f"**Suite:** {suite_opcoes.get(caso['suite_id'], 'N/A')}")
+                    st.write(f"**Pré-condições:** {caso['pre_condicoes']}")
+                    st.write(f"**Passos para Execução:** {caso['passos_execucao']}")
+                    st.write(f"**Resultado Esperado:** {caso['resultado_esperado']}")
+                    st.write(f"**Prioridade:** {caso['prioridade']}")
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("Editar", key=f"edit_{caso['id']}"):
+                            st.session_state['caso_edicao'] = caso
+                            st.rerun()
+                    with col2:
+                        if st.button("Excluir", key=f"del_{caso['id']}"):
+                            if db.deletar_caso_teste(caso['id']):
+                                st.success("Caso de teste excluído com sucesso!")
+                                st.rerun()
+                            else:
+                                st.error("Erro ao excluir caso de teste!")
+        else:
+            st.info("Nenhum caso de teste encontrado.")
+    
+    with tab2:
         st.header("Criar Novo Caso de Teste")
         
         with st.form("form_caso_teste"):
@@ -61,33 +90,4 @@ def render_caso_teste():
                         st.success("Caso de teste criado com sucesso!")
                         st.rerun()
                     else:
-                        st.error("Erro ao criar caso de teste!")
-    
-    with tab2:
-        st.header("Casos de Teste Existentes")
-        
-        casos = db.listar_casos_teste()
-        if casos:
-            for caso in casos:
-                with st.expander(f"{caso['titulo']} - {caso['status']}"):
-                    st.write(f"**Descrição:** {caso['descricao']}")
-                    st.write(f"**Suite:** {suite_opcoes.get(caso['suite_id'], 'N/A')}")
-                    st.write(f"**Pré-condições:** {caso['pre_condicoes']}")
-                    st.write(f"**Passos para Execução:** {caso['passos_execucao']}")
-                    st.write(f"**Resultado Esperado:** {caso['resultado_esperado']}")
-                    st.write(f"**Prioridade:** {caso['prioridade']}")
-                    
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if st.button("Editar", key=f"edit_{caso['id']}"):
-                            st.session_state['caso_edicao'] = caso
-                            st.rerun()
-                    with col2:
-                        if st.button("Excluir", key=f"del_{caso['id']}"):
-                            if db.deletar_caso_teste(caso['id']):
-                                st.success("Caso de teste excluído com sucesso!")
-                                st.rerun()
-                            else:
-                                st.error("Erro ao excluir caso de teste!")
-        else:
-            st.info("Nenhum caso de teste encontrado.") 
+                        st.error("Erro ao criar caso de teste!") 
