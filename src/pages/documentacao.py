@@ -214,10 +214,19 @@ def main():
     # Inicializar banco de dados
     init_db()
     
-    # Criar tabs para edição e visualização
-    tab1, tab2 = st.tabs(["✏️ Edição", "👀 Visualização"])
+    # Criar tabs para visualização e edição (ordem invertida)
+    tab1, tab2 = st.tabs(["👀 Visualização", "✏️ Edição"])
     
     with tab1:
+        st.header("Visualização de Documentação")
+        
+        # Lista de pastas para visualização
+        pastas_raiz = listar_pastas()  # Apenas pastas raiz
+        
+        for pasta in pastas_raiz:
+            render_pasta(pasta, modo_edicao=False)
+    
+    with tab2:
         st.header("Edição de Documentação")
         
         # Verificar se há uma pasta para edição
@@ -289,15 +298,6 @@ def main():
         
         for pasta in pastas_raiz:
             render_pasta(pasta, modo_edicao=True)
-    
-    with tab2:
-        st.header("Visualização de Documentação")
-        
-        # Lista de pastas para visualização
-        pastas_raiz = listar_pastas()  # Apenas pastas raiz
-        
-        for pasta in pastas_raiz:
-            render_pasta(pasta, modo_edicao=False)
 
 if __name__ == "__main__":
     main() 
