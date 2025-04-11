@@ -190,10 +190,8 @@ def render_pasta(pasta, nivel=0, modo_edicao=False):
             
             with col2:
                 if st.button("🗑️ Excluir", key=f"delete_{pasta_id}"):
-                    if st.button("Confirmar exclusão?", key=f"confirm_{pasta_id}"):
-                        excluir_pasta(pasta_id)
-                        st.success(f"Pasta '{nome}' excluída com sucesso!")
-                        st.experimental_rerun()
+                    st.session_state['pasta_exclusao'] = pasta_id
+                    st.session_state['pasta_exclusao_nome'] = nome
         
         # Renderizar subpastas
         if subpastas:
@@ -228,6 +226,28 @@ def main():
     
     with tab2:
         st.header("Edição de Documentação")
+        
+        # Verificar se há uma pasta para exclusão
+        if 'pasta_exclusao' in st.session_state:
+            pasta_id = st.session_state['pasta_exclusao']
+            pasta_nome = st.session_state['pasta_exclusao_nome']
+            
+            st.warning(f"Você está prestes a excluir a pasta '{pasta_nome}' e todas as suas subpastas. Esta ação não pode ser desfeita.")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Confirmar Exclusão", key="confirmar_exclusao"):
+                    excluir_pasta(pasta_id)
+                    st.success(f"Pasta '{pasta_nome}' excluída com sucesso!")
+                    del st.session_state['pasta_exclusao']
+                    del st.session_state['pasta_exclusao_nome']
+                    st.experimental_rerun()
+            
+            with col2:
+                if st.button("Cancelar", key="cancelar_exclusao"):
+                    del st.session_state['pasta_exclusao']
+                    del st.session_state['pasta_exclusao_nome']
+                    st.experimental_rerun()
         
         # Verificar se há uma pasta para edição
         if 'pasta_edicao' in st.session_state:
