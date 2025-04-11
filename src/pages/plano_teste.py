@@ -1,9 +1,15 @@
 import streamlit as st
 from datetime import datetime
 from src.database.sqlite_db import SQLiteDB
+from src.pages.editar_plano_teste import render_editar_plano_teste
 
 def render_plano_teste():
     st.title("Planos de Teste")
+    
+    # Verificar se estamos em modo de edição
+    if 'plano_edicao' in st.session_state:
+        render_editar_plano_teste()
+        return
     
     # Inicializa conexão com o banco
     db = SQLiteDB()

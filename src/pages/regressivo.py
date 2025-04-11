@@ -1,9 +1,15 @@
 import streamlit as st
 from datetime import datetime
 from src.database.sqlite_db import SQLiteDB
+from src.pages.editar_regressivo import render_editar_regressivo
 
 def render_regressivo():
     st.title("Testes Regressivos")
+    
+    # Verificar se estamos em modo de edição
+    if 'regressivo_edicao' in st.session_state:
+        render_editar_regressivo()
+        return
     
     # Inicializa conexão com o banco
     db = SQLiteDB()

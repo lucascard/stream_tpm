@@ -200,16 +200,24 @@ class SQLiteDB:
                 campos.append(f"{campo} = ?")
                 valores.append(valor)
         
+        # Adiciona o ID ao final dos valores
+        valores.append(caso_id)
+        
+        # Constrói a query
         query = f'''
             UPDATE casos_teste 
             SET {', '.join(campos)}
             WHERE id = ?
         '''
-        valores.append(caso_id)
         
-        cursor.execute(query, valores)
-        self.conn.commit()
-        return cursor.rowcount > 0
+        # Executa a query
+        try:
+            cursor.execute(query, valores)
+            self.conn.commit()
+            return cursor.rowcount > 0
+        except Exception as e:
+            print(f"Erro ao atualizar caso de teste: {str(e)}")
+            return False
 
     def deletar_caso_teste(self, caso_id):
         """Deleta um caso de teste"""
@@ -217,6 +225,43 @@ class SQLiteDB:
         cursor.execute('DELETE FROM casos_teste WHERE id = ?', (caso_id,))
         self.conn.commit()
         return cursor.rowcount > 0
+
+    def atualizar_caso_teste_simples(self, caso_id, titulo, descricao, suite_id, pre_condicoes, 
+                               passos_execucao, resultado_esperado, status, prioridade):
+        """Método simplificado para atualizar um caso de teste"""
+        cursor = self.conn.cursor()
+        data_atual = datetime.now()
+        
+        try:
+            cursor.execute('''
+                UPDATE casos_teste 
+                SET titulo = ?, 
+                    descricao = ?, 
+                    suite_id = ?, 
+                    pre_condicoes = ?, 
+                    passos_execucao = ?, 
+                    resultado_esperado = ?, 
+                    status = ?, 
+                    prioridade = ?,
+                    data_atualizacao = ?
+                WHERE id = ?
+            ''', (
+                titulo, 
+                descricao, 
+                suite_id, 
+                pre_condicoes, 
+                passos_execucao, 
+                resultado_esperado, 
+                status, 
+                prioridade,
+                data_atual,
+                caso_id
+            ))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Erro ao atualizar caso de teste: {str(e)}")
+            return False
 
     # Métodos para Testes Regressivos
     def inserir_regressivo(self, titulo, descricao, status):
