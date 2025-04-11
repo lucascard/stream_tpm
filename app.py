@@ -5,6 +5,7 @@ from src.pages.suite_teste import render_suite_teste
 from src.pages.caso_teste import render_caso_teste
 from src.pages.regressivo import render_regressivo
 from src.pages.editar_caso_teste import render_editar_caso_teste
+from src.pages.documentacao import main as render_documentacao
 
 # Configuração da página
 st.set_page_config(
@@ -64,7 +65,7 @@ st.sidebar.markdown("---")
 # Opções do menu com ícones
 menu = st.sidebar.radio(
     "Navegação",
-    ["📊 Dashboard", "📋 Planos de Teste", "🧪 Suítes de Teste", "✅ Casos de Teste", "🔄 Testes Regressivos"],
+    ["📊 Dashboard", "📋 Planos de Teste", "🧪 Suítes de Teste", "✅ Casos de Teste", "🔄 Testes Regressivos", "📚 Documentação"],
     label_visibility="collapsed"
 )
 
@@ -79,6 +80,8 @@ elif menu == "✅ Casos de Teste":
     render_caso_teste()
 elif menu == "🔄 Testes Regressivos":
     render_regressivo()
+elif menu == "📚 Documentação":
+    render_documentacao()
 
 # Verifica se há um caso de teste para edição
 if 'caso_edicao' in st.session_state:
