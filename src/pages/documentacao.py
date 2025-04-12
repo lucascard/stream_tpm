@@ -259,36 +259,26 @@ def main():
     with tab2:
         st.header("Edição de Documentação")
         
-        # Verificar se há uma pasta para exclusão
-        if 'pasta_exclusao' in st.session_state:
-            pasta_id = st.session_state['pasta_exclusao']
-            pasta_nome = st.session_state['pasta_exclusao_nome']
+        # 1. Formulário para criar nova pasta
+        with st.form("nova_pasta"):
+            st.subheader("Nova Pasta de Documentação")
+            nome_pasta = st.text_input("Nome da Pasta")
+            regras = st.text_area("Regras da Pasta")
             
-            # Adicionar script para rolar até o topo
-            st.markdown("""
-                <script>
-                    window.scrollTo(0, 0);
-                </script>
-            """, unsafe_allow_html=True)
+            # Seleção de pasta pai (opcional)
+            todas_pastas = listar_todas_pastas()
+            opcoes_pastas = ["Nenhuma (Pasta Raiz)"] + [f"{p[1]} (ID: {p[0]})" for p in todas_pastas]
+            pasta_pai_idx = st.selectbox("Pasta Pai (opcional)", range(len(opcoes_pastas)), format_func=lambda x: opcoes_pastas[x])
             
-            st.warning(f"Você está prestes a excluir a pasta '{pasta_nome}' e todas as suas subpastas. Esta ação não pode ser desfeita.")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Confirmar Exclusão", key="confirmar_exclusao"):
-                    excluir_pasta(pasta_id)
-                    st.success(f"Pasta '{pasta_nome}' excluída com sucesso!")
-                    del st.session_state['pasta_exclusao']
-                    del st.session_state['pasta_exclusao_nome']
-                    st.experimental_rerun()
-            
-            with col2:
-                if st.button("Cancelar", key="cancelar_exclusao"):
-                    del st.session_state['pasta_exclusao']
-                    del st.session_state['pasta_exclusao_nome']
-                    st.experimental_rerun()
+            if st.form_submit_button("Criar Pasta"):
+                if nome_pasta:
+                    pasta_pai_id = None if pasta_pai_idx == 0 else todas_pastas[pasta_pai_idx-1][0]
+                    criar_pasta(nome_pasta, regras, pasta_pai_id)
+                    st.success("Pasta criada com sucesso!")
+                else:
+                    st.error("Por favor, insira um nome para a pasta.")
         
-        # Verificar se há uma pasta para edição
+        # 2. Verificar se há uma pasta para edição
         if 'pasta_edicao' in st.session_state:
             pasta_id = st.session_state['pasta_edicao']
             pasta = obter_pasta(pasta_id)
@@ -332,26 +322,7 @@ def main():
                             del st.session_state['pasta_edicao']
                             st.experimental_rerun()
         
-        # Formulário para criar nova pasta
-        with st.form("nova_pasta"):
-            st.subheader("Nova Pasta de Documentação")
-            nome_pasta = st.text_input("Nome da Pasta")
-            regras = st.text_area("Regras da Pasta")
-            
-            # Seleção de pasta pai (opcional)
-            todas_pastas = listar_todas_pastas()
-            opcoes_pastas = ["Nenhuma (Pasta Raiz)"] + [f"{p[1]} (ID: {p[0]})" for p in todas_pastas]
-            pasta_pai_idx = st.selectbox("Pasta Pai (opcional)", range(len(opcoes_pastas)), format_func=lambda x: opcoes_pastas[x])
-            
-            if st.form_submit_button("Criar Pasta"):
-                if nome_pasta:
-                    pasta_pai_id = None if pasta_pai_idx == 0 else todas_pastas[pasta_pai_idx-1][0]
-                    criar_pasta(nome_pasta, regras, pasta_pai_id)
-                    st.success("Pasta criada com sucesso!")
-                else:
-                    st.error("Por favor, insira um nome para a pasta.")
-        
-        # Lista de pastas existentes
+        # 3. Lista de pastas existentes
         st.subheader("Pastas Existentes")
         pastas_raiz = listar_pastas()  # Apenas pastas raiz
         
@@ -360,6 +331,35 @@ def main():
         else:
             for pasta in pastas_raiz:
                 render_pasta(pasta, modo_edicao=True)
+        
+        # Verificar se há uma pasta para exclusão (mantido no final para não interferir na ordem visual)
+        if 'pasta_exclusao' in st.session_state:
+            pasta_id = st.session_state['pasta_exclusao']
+            pasta_nome = st.session_state['pasta_exclusao_nome']
+            
+            # Adicionar script para rolar até o topo
+            st.markdown("""
+                <script>
+                    window.scrollTo(0, 0);
+                </script>
+            """, unsafe_allow_html=True)
+            
+            st.warning(f"Você está prestes a excluir a pasta '{pasta_nome}' e todas as suas subpastas. Esta ação não pode ser desfeita.")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Confirmar Exclusão", key="confirmar_exclusao"):
+                    excluir_pasta(pasta_id)
+                    st.success(f"Pasta '{pasta_nome}' excluída com sucesso!")
+                    del st.session_state['pasta_exclusao']
+                    del st.session_state['pasta_exclusao_nome']
+                    st.experimental_rerun()
+            
+            with col2:
+                if st.button("Cancelar", key="cancelar_exclusao"):
+                    del st.session_state['pasta_exclusao']
+                    del st.session_state['pasta_exclusao_nome']
+                    st.experimental_rerun()
 
 if __name__ == "__main__":
     main() 
